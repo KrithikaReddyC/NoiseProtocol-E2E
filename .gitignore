@@ -1,0 +1,35 @@
+# ── Python ───────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+*.egg
+
+# ── Virtual environments ─────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── App runtime data (must never be committed) ───────────
+web_ui/users.db
+web_ui/chat_data.json
+web_ui/chat_data.json.tmp
+web_ui/uploads/
+
+# ── Secrets / certificates (demo key — never commit) ─────
+noiseprotocol/Implementation/server.key
+noiseprotocol/Implementation/server.crt
+
+# ── OS / editor cruft ────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# ── Logs ─────────────────────────────────────────────────
+*.log
