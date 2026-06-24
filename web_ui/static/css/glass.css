@@ -1,0 +1,167 @@
+/* =========================================================================
+   Noise Protocol - Liquid glass system (whole app)
+   Loaded LAST on landing, auth and chat. Turns the key surfaces into frosted
+   translucent "liquid glass" panels with specular edges + depth, on the dark
+   aurora base. Message bubbles use a cheaper "glass-lite" (no backdrop blur)
+   so long threads stay smooth.
+   ========================================================================= */
+
+:root {
+  --glass-fill: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+  --glass-tint: rgba(8, 22, 15, 0.52);
+  --glass-border: rgba(255, 255, 255, 0.13);
+  --glass-blur: blur(22px) saturate(165%);
+  --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.16), inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+  --glass-drop: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* ---- frosted glass surfaces -------------------------------------------- */
+/* chat (scoped under .noise-app) */
+.noise-app .wa-side,
+.noise-app .wa-side-top,
+.noise-app .wa-chat-head,
+.noise-app .wa-composer,
+.noise-app .wa-menu-list,
+.noise-app .wa-drawer,
+.noise-app .modal-content,
+.noise-app .card,
+/* landing + auth (global) */
+.nav.scrolled,
+.tilt-card,
+.cta-final,
+.steps,
+.auth-card,
+.eyebrow,
+.prop {
+  background: var(--glass-fill), var(--glass-tint) !important;
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--glass-inset), var(--glass-drop) !important;
+}
+
+/* the sidebar is one glass slab: avoid double-frosting the inner top bar edge */
+.noise-app .wa-side { box-shadow: var(--glass-drop) !important; border-radius: 0 !important; }
+.noise-app .wa-side-top { background: rgba(255,255,255,0.03) !important; backdrop-filter: none; box-shadow: none !important; border: none !important; border-bottom: 1px solid var(--glass-border) !important; }
+
+/* specular sheen for premium panels */
+.auth-card, .cta-final, .noise-app .modal-content, .noise-app .wa-chat-head { position: relative; isolation: isolate; }
+.auth-card::after, .cta-final::after, .noise-app .modal-content::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 0;
+  background: radial-gradient(130% 70% at 12% -15%, rgba(255, 255, 255, 0.16), transparent 48%);
+}
+.auth-card > *, .cta-final > *, .noise-app .modal-content > * { position: relative; z-index: 1; }
+
+/* ---- glass inputs ------------------------------------------------------ */
+.noise-app .wa-search-box,
+.noise-app .wa-composer #message-input,
+.noise-app .form-control,
+.noise-app .form-select,
+.field input {
+  background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.015)), rgba(0,0,0,0.28) !important;
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+
+/* ---- glass icon / ghost buttons (keep solid green CTAs as-is) --------- */
+.noise-app .wa-iconbtn:hover,
+.noise-app .btn-secondary,
+.noise-app .btn-outline-secondary,
+.btn-ghost {
+  background: linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03)) !important;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.14) !important;
+}
+.noise-app .wa-send { box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 8px 22px rgba(0,255,127,0.30) !important; }
+
+/* active chat row -> glass highlight */
+.noise-app .wa-chat-row.active {
+  background: linear-gradient(135deg, rgba(0,255,127,0.16), rgba(0,255,127,0.05)) !important;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border: 1px solid rgba(0,255,127,0.22) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12) !important;
+}
+
+/* ---- message bubbles: glass-lite (no backdrop blur, for perf) --------- */
+.noise-app .wa-messages .message-bubble {
+  font-family: var(--font-body) !important;
+}
+.noise-app .wa-messages .message-content {
+  font-family: var(--font-body) !important;
+  font-size: 0.95rem; font-weight: 400; line-height: 1.5; letter-spacing: 0.005em;
+}
+.noise-app .wa-messages .message.incoming .message-bubble {
+  background: linear-gradient(160deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02)), rgba(8,22,15,0.55) !important;
+  border: 1px solid rgba(255,255,255,0.10) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 6px 18px rgba(0,0,0,0.35) !important;
+  color: var(--fg) !important;
+}
+.noise-app .wa-messages .message.outgoing .message-bubble {
+  background: linear-gradient(160deg, rgba(0,255,127,0.26), rgba(0,255,127,0.09)) !important;
+  border: 1px solid rgba(0,255,127,0.42) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.20), 0 6px 18px rgba(0,0,0,0.4) !important;
+  color: #eafff4 !important;
+}
+
+/* message entrance animation */
+@keyframes waMsgIn { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
+.noise-app .wa-messages .message { animation: waMsgIn 0.28s cubic-bezier(0.16,1,0.3,1) both; }
+
+/* ---- glass reaction chip (emoji + count) ------------------------------ */
+.noise-app .wa-messages .reaction-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px; border-radius: 999px; cursor: pointer;
+  font-size: 0.82rem; font-weight: 600; color: var(--fg) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,0.11), rgba(255,255,255,0.03)) !important;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 4px 12px rgba(0,0,0,0.3) !important;
+  transition: transform 0.15s var(--ease), box-shadow 0.2s var(--ease);
+  animation: chipPop 0.22s cubic-bezier(0.16,1,0.3,1);
+}
+.noise-app .wa-messages .reaction-badge:hover { transform: translateY(-1px); }
+.noise-app .wa-messages .reaction-badge.reacted {
+  background: linear-gradient(135deg, rgba(0,255,127,0.32), rgba(0,255,127,0.12)) !important;
+  border-color: var(--accent) !important; color: #eafff4 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 0 16px rgba(0,255,127,0.42) !important;
+}
+@keyframes chipPop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.12); } 100% { transform: scale(1); opacity: 1; } }
+
+/* hover action toolbar -> clean SOLID pill (frosted blur caused the white-box artifact) */
+.noise-app .wa-messages .message-actions {
+  background: #0a1c13 !important;
+  -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+  border: 1px solid var(--border-strong) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6) !important;
+  padding: 4px !important; gap: 2px !important;
+}
+.noise-app .wa-messages .message-actions .action-btn { width: 30px; height: 30px; border-radius: 50%; }
+.noise-app .wa-messages .message-actions .action-btn:hover { background: rgba(0,255,127,0.14) !important; color: var(--accent) !important; }
+
+/* modal backdrop: dim + blur the app behind */
+.modal-backdrop.show {
+  background-color: rgba(0, 6, 3, 0.55) !important;
+  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px);
+  opacity: 1 !important;
+}
+
+/* avatars get a glassy rim */
+.noise-app .wa-avatar { box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 6px 16px rgba(0,255,127,0.25) !important; }
+
+/* ---- accessibility: solid fallback when transparency is reduced ------- */
+@media (prefers-reduced-transparency: reduce) {
+  .noise-app .wa-side, .noise-app .wa-chat-head, .noise-app .wa-composer,
+  .noise-app .wa-menu-list, .noise-app .wa-drawer, .noise-app .modal-content,
+  .noise-app .card, .nav.scrolled, .tilt-card, .cta-final, .steps, .auth-card,
+  .noise-app .wa-search-box, .noise-app .form-control, .field input,
+  .noise-app .wa-messages .message-bubble, .noise-app .wa-messages .reaction-badge,
+  .noise-app .wa-messages .message-actions {
+    -webkit-backdrop-filter: none !important; backdrop-filter: none !important;
+    background: var(--bg-1, #04110b) !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .noise-app .wa-messages .message, .noise-app .wa-messages .reaction-badge { animation: none !important; }
+}

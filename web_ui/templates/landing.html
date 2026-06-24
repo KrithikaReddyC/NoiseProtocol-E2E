@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Noise &middot; End-to-end encrypted chat</title>
+  <meta name="description" content="A secure messenger built on the Noise Protocol. Mutually authenticated handshake, perfect forward secrecy, and authenticated encryption you can verify yourself." />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/glass.css') }}" />
+</head>
+<body>
+  <!-- Animated aurora background -->
+  <div class="scene" role="img" aria-label="Animated digital data background">
+    <div class="grid-floor"></div>
+    <div class="floor"></div>
+    <div class="main-column"></div>
+    <div class="light-stream-container" id="beams"></div>
+  </div>
+
+  <div class="wrap">
+    <!-- Navigation -->
+    <header class="nav" id="nav">
+      <div class="container">
+        <a class="brand" href="#top"><span class="dot"></span> Noise</a>
+        <nav class="nav-links">
+          <a href="#features">Features</a>
+          <a href="#security">Security</a>
+          <a href="#performance">Speed</a>
+          <a href="#start">Get started</a>
+        </nav>
+        {% if logged_in %}
+        <a class="btn btn-primary btn-sm" href="{{ url_for('chat_app') }}">Open chat <i data-lucide="arrow-right"></i></a>
+        {% else %}
+        <a class="btn btn-primary btn-sm" href="{{ url_for('login_page') }}">Launch app <i data-lucide="arrow-right"></i></a>
+        {% endif %}
+      </div>
+    </header>
+
+    <main class="container" id="top">
+      <!-- Hero -->
+      <section class="hero">
+        <span class="eyebrow"><span class="pulse"></span> End-to-end encrypted</span>
+        <h1>Private by <span class="glow">construction</span>.<br>Not by promise.</h1>
+        <p class="sub">Every message clears a mutually authenticated handshake, sealed with ChaCha20-Poly1305. And you can verify it yourself, inside the app.</p>
+        <div class="hero-cta">
+          <a class="btn btn-primary btn-lg" href="{{ url_for('login_page') }}">Launch app <i data-lucide="arrow-right"></i></a>
+          <a class="btn btn-ghost btn-lg" href="#security">See the handshake</a>
+        </div>
+        <div class="specstrip">
+          <span>Noise&nbsp;XX</span>
+          <span>X25519</span>
+          <span>ChaCha20-Poly1305</span>
+          <span>SHA-256</span>
+        </div>
+
+        <!-- Honest credibility: the framework's real pedigree -->
+        <div class="cred reveal">
+          <span class="cred-label">The same framework that secures</span>
+          <div class="cred-logos">
+            <img src="https://cdn.simpleicons.org/wireguard/9fc7b4" alt="WireGuard" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'cred-text',textContent:'WireGuard'}))" />
+            <img src="https://cdn.simpleicons.org/whatsapp/9fc7b4" alt="WhatsApp" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'cred-text',textContent:'WhatsApp'}))" />
+            <span class="cred-text">Lightning Network</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features: 3D tilt showcase -->
+      <section class="section" id="features">
+        <div class="section-head reveal">
+          <h2>Security underneath. A real messenger on top.</h2>
+          <p>The cryptography is the part you should never have to think about. Everything else is what you will actually use every day.</p>
+        </div>
+
+        <div class="tilt-grid">
+          <!-- 1 -->
+          <article class="tilt-card reveal-fade" data-tilt>
+            <div class="tilt-inner">
+              <div class="tilt-bg"></div>
+              <img class="tilt-img" src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=900&auto=format&fit=crop" alt="Streaming encrypted data" loading="lazy" onerror="this.style.opacity=0" />
+              <div class="tilt-scrim"></div>
+              <div class="tilt-tint"></div>
+              <div class="tilt-content">
+                <div class="tilt-head">
+                  <div>
+                    <h3 class="tilt-title">The handshake</h3>
+                    <span class="tilt-tag">Noise XX</span>
+                  </div>
+                  <a class="tilt-link" href="#security" aria-label="See how the handshake works"><i data-lucide="arrow-up-right"></i></a>
+                </div>
+                <div class="tilt-foot">
+                  <p class="tilt-desc">Both sides prove who they are before a single byte of chat is sent.</p>
+                  <a class="tilt-btn" href="#security">See how it works</a>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 2 -->
+          <article class="tilt-card reveal-fade" data-tilt>
+            <div class="tilt-inner">
+              <div class="tilt-bg"></div>
+              <img class="tilt-img" src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=900&auto=format&fit=crop" alt="Locked, encrypted channel" loading="lazy" onerror="this.style.opacity=0" />
+              <div class="tilt-scrim"></div>
+              <div class="tilt-tint"></div>
+              <div class="tilt-content">
+                <div class="tilt-head">
+                  <div>
+                    <h3 class="tilt-title">Sealed messages</h3>
+                    <span class="tilt-tag">ChaCha20-Poly1305</span>
+                  </div>
+                  <a class="tilt-link" href="{{ url_for('login_page') }}" aria-label="Launch the app"><i data-lucide="arrow-up-right"></i></a>
+                </div>
+                <div class="tilt-foot">
+                  <p class="tilt-desc">Authenticated encryption that catches tampering and shuts out replays.</p>
+                  <a class="tilt-btn" href="{{ url_for('login_page') }}">Launch app</a>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 3 -->
+          <article class="tilt-card reveal-fade" data-tilt>
+            <div class="tilt-inner">
+              <div class="tilt-bg"></div>
+              <img class="tilt-img" src="https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=900&auto=format&fit=crop" alt="Data moving through servers" loading="lazy" onerror="this.style.opacity=0" />
+              <div class="tilt-scrim"></div>
+              <div class="tilt-tint"></div>
+              <div class="tilt-content">
+                <div class="tilt-head">
+                  <div>
+                    <h3 class="tilt-title">Encrypted files</h3>
+                    <span class="tilt-tag">Up to 50 MB</span>
+                  </div>
+                  <a class="tilt-link" href="{{ url_for('login_page') }}" aria-label="Launch the app"><i data-lucide="arrow-up-right"></i></a>
+                </div>
+                <div class="tilt-foot">
+                  <p class="tilt-desc">Send documents, images, and media straight through the secure channel.</p>
+                  <a class="tilt-btn" href="{{ url_for('login_page') }}">Launch app</a>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 4 -->
+          <article class="tilt-card reveal-fade" data-tilt>
+            <div class="tilt-inner">
+              <div class="tilt-bg"></div>
+              <img class="tilt-img" src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=900&auto=format&fit=crop" alt="People collaborating" loading="lazy" onerror="this.style.opacity=0" />
+              <div class="tilt-scrim"></div>
+              <div class="tilt-tint"></div>
+              <div class="tilt-content">
+                <div class="tilt-head">
+                  <div>
+                    <h3 class="tilt-title">Rooms &amp; threads</h3>
+                    <span class="tilt-tag">Group chat</span>
+                  </div>
+                  <a class="tilt-link" href="{{ url_for('login_page') }}" aria-label="Launch the app"><i data-lucide="arrow-up-right"></i></a>
+                </div>
+                <div class="tilt-foot">
+                  <p class="tilt-desc">Open rooms, reply in threads, and keep conversations where they belong.</p>
+                  <a class="tilt-btn" href="{{ url_for('login_page') }}">Launch app</a>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 5 -->
+          <article class="tilt-card reveal-fade" data-tilt>
+            <div class="tilt-inner">
+              <div class="tilt-bg"></div>
+              <img class="tilt-img" src="https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=900&auto=format&fit=crop" alt="Code and markdown" loading="lazy" onerror="this.style.opacity=0" />
+              <div class="tilt-scrim"></div>
+              <div class="tilt-tint"></div>
+              <div class="tilt-content">
+                <div class="tilt-head">
+                  <div>
+                    <h3 class="tilt-title">Rich messages</h3>
+                    <span class="tilt-tag">Markdown &amp; reactions</span>
+                  </div>
+                  <a class="tilt-link" href="{{ url_for('login_page') }}" aria-label="Launch the app"><i data-lucide="arrow-up-right"></i></a>
+                </div>
+                <div class="tilt-foot">
+                  <p class="tilt-desc">Code blocks, edits, replies, and emoji reactions that feel native.</p>
+                  <a class="tilt-btn" href="{{ url_for('login_page') }}">Launch app</a>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 6 -->
+          <article class="tilt-card reveal-fade" data-tilt>
+            <div class="tilt-inner">
+              <div class="tilt-bg"></div>
+              <img class="tilt-img" src="https://images.unsplash.com/photo-1510915228340-29c85a43dcfe?q=80&w=900&auto=format&fit=crop" alt="Running security checks" loading="lazy" onerror="this.style.opacity=0" />
+              <div class="tilt-scrim"></div>
+              <div class="tilt-tint"></div>
+              <div class="tilt-content">
+                <div class="tilt-head">
+                  <div>
+                    <h3 class="tilt-title">Prove it yourself</h3>
+                    <span class="tilt-tag">Security tests</span>
+                  </div>
+                  <a class="tilt-link" href="{{ url_for('login_page') }}" aria-label="Run the security tests"><i data-lucide="arrow-up-right"></i></a>
+                </div>
+                <div class="tilt-foot">
+                  <p class="tilt-desc">Run handshake, replay, and tamper checks against the live server.</p>
+                  <a class="tilt-btn" href="{{ url_for('login_page') }}">Run the tests</a>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- Security deep-dive -->
+      <section class="section" id="security">
+        <div class="section-head reveal">
+          <span class="kicker">Under the hood</span>
+          <h2>Three messages. Then no one else can listen.</h2>
+          <p>The XX pattern authenticates both sides and derives keys that live and die with the session. Lose them and the past stays sealed.</p>
+        </div>
+        <div class="steps reveal">
+          <div class="step">
+            <div class="num">01</div>
+            <div class="arrow">-&gt; e</div>
+            <h4>Client opens</h4>
+            <p>The client sends a one-time ephemeral key to start the exchange.</p>
+          </div>
+          <div class="step">
+            <div class="num">02</div>
+            <div class="arrow">&lt;- e, ee, s, es</div>
+            <h4>Server answers</h4>
+            <p>The server mixes shared secrets and returns its encrypted identity.</p>
+          </div>
+          <div class="step">
+            <div class="num">03</div>
+            <div class="arrow">-&gt; s, se</div>
+            <h4>Channel sealed</h4>
+            <p>The client proves itself, both sides derive transport keys, and chat begins.</p>
+          </div>
+        </div>
+        <div class="props reveal">
+          <span class="prop"><i data-lucide="key-round"></i> Perfect forward secrecy</span>
+          <span class="prop"><i data-lucide="fingerprint"></i> Mutual authentication</span>
+          <span class="prop"><i data-lucide="shield"></i> Tamper-evident (AEAD)</span>
+          <span class="prop"><i data-lucide="repeat"></i> Replay protection</span>
+        </div>
+      </section>
+
+      <!-- Performance -->
+      <section class="section" id="performance">
+        <div class="perf-grid">
+          <div class="section-head reveal" style="margin-bottom:0">
+            <h2>One round trip to a secure channel.</h2>
+            <p>Modern curves and a stream cipher keep the handshake small and quick. Here is the relative handshake cost, shown for illustration.</p>
+            <p class="note">Figures are illustrative for demonstration, not measured benchmarks.</p>
+          </div>
+          <div class="bars reveal">
+            <div class="bar-row">
+              <div class="bar-label"><span>Noise XX</span><span>fast</span></div>
+              <div class="bar-track"><div class="bar-fill noise" data-w="82%"></div></div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label"><span>TLS 1.3</span><span>moderate</span></div>
+              <div class="bar-track"><div class="bar-fill tls" data-w="58%"></div></div>
+            </div>
+            <div class="bar-row">
+              <div class="bar-label"><span>TLS 1.2</span><span>slower</span></div>
+              <div class="bar-track"><div class="bar-fill tls" data-w="40%"></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Get started -->
+      <section class="section" id="start">
+        <div class="section-head center reveal">
+          <h2>Up and running in three steps.</h2>
+        </div>
+        <div class="how">
+          <div class="how-item reveal">
+            <div class="ring"><i data-lucide="rocket"></i></div>
+            <h4>Launch</h4>
+            <p>Open the secure portal from any browser.</p>
+          </div>
+          <div class="how-item reveal">
+            <div class="ring"><i data-lucide="user-plus"></i></div>
+            <h4>Create your account</h4>
+            <p>Sign up once. Your access, your credentials.</p>
+          </div>
+          <div class="how-item reveal">
+            <div class="ring"><i data-lucide="messages-square"></i></div>
+            <h4>Start chatting</h4>
+            <p>Connect to a server and send encrypted messages.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Final CTA -->
+      <section class="section">
+        <div class="cta-final reveal">
+          <h2>Say something only they can read.</h2>
+          <p>Open the secure portal and start an encrypted conversation in under a minute.</p>
+          <a class="btn btn-primary btn-lg" href="{{ url_for('login_page') }}">Launch app <i data-lucide="arrow-right"></i></a>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <a class="brand" href="#top"><span class="dot"></span> Noise</a>
+        <div class="footer-links">
+          <a href="#features">Features</a>
+          <a href="#security">Security</a>
+          <a href="#start">Get started</a>
+          <a href="{{ url_for('login_page') }}">Launch</a>
+        </div>
+        <div class="meta">Built on the Noise Protocol framework</div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="{{ url_for('static', filename='js/landing.js') }}"></script>
+</body>
+</html>
