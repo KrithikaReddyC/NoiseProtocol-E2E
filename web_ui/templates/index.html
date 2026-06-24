@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noise Protocol Secure Chat</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/message_interactions.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <!-- Syntax highlighting for code blocks -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
+    <!-- Rich text message styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/rich_text.css') }}">
+    <!-- Aurora theme (loaded last; overrides Bootstrap + base styles) -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app-theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/whatsapp.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/glass.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/wa-pro.css') }}">
+</head>
+<body class="noise-app" data-account="{{ account or '' }}">
+    <div class="wa" id="wa-app">
+        <!-- LEFT PANE: account + rooms (chats) -->
+        <aside class="wa-side">
+            <header class="wa-side-top">
+                <div class="wa-me" id="open-profile" role="button" title="Profile &amp; settings">
+                    <div class="wa-avatar" id="me-avatar">{{ (account or 'U')[0] }}</div>
+                    <div class="wa-me-name" id="me-name">{{ account or 'You' }}</div>
+                </div>
+                <div class="wa-side-actions">
+                    <button class="wa-iconbtn" id="new-room-btn" title="New room" data-bs-toggle="modal" data-bs-target="#createRoomModal"><i class="bi bi-plus-lg"></i></button>
+                    <div class="wa-menu">
+                        <button class="wa-iconbtn" id="wa-overflow-btn" title="Menu"><i class="bi bi-three-dots-vertical"></i></button>
+                        <div class="wa-menu-list" id="wa-overflow-menu" hidden>
+                            <button type="button" id="file-transfer-btn"><i class="bi bi-file-earmark-arrow-up"></i> Files</button>
+                            <button type="button" id="security-report-btn"><i class="bi bi-shield-lock"></i> Security report</button>
+                            <button type="button" id="performance-stats-btn"><i class="bi bi-graph-up"></i> Performance</button>
+                            <a class="danger" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right"></i> Log out</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <div class="wa-conn"><span class="wa-conn-dot off" id="wa-conn-dot"></span><span id="wa-conn-text">Connecting…</span></div>
+            <div class="wa-search">
+                <div class="wa-search-box"><i class="bi bi-search"></i><input type="text" id="room-search" placeholder="Search rooms" autocomplete="off"></div>
+            </div>
+            <div class="wa-chat-list" id="room-list">
+                <div class="wa-list-loading"><i class="bi bi-arrow-repeat"></i> Loading rooms…</div>
+            </div>
+        </aside>
+
+        <!-- RIGHT PANE: conversation -->
+        <main class="wa-main">
+            <section class="wa-chat" id="wa-chat">
+                <header class="wa-chat-head">
+                    <div class="wa-chat-id" id="open-members">
+                        <div class="wa-avatar wa-avatar-room" id="wa-room-avatar">M</div>
+                        <div>
+                            <div class="wa-chat-name" id="active-room">Main Room</div>
+                            <div class="wa-chat-sub" id="room-subtitle"><i class="bi bi-shield-lock-fill"></i> End-to-end encrypted · Noise XX</div>
+                        </div>
+                    </div>
+                    <div class="wa-chat-actions">
+                        <button class="wa-iconbtn" id="members-btn" title="Members"><i class="bi bi-people"></i></button>
+                    </div>
+                </header>
+
+                <div class="wa-messages" id="chat-messages">
+                    <div class="wa-day-sep">Beginning of secure conversation</div>
+                </div>
+
+                <footer class="wa-composer">
+                    <form id="message-form" class="wa-composer-form" autocomplete="off">
+                        <button type="button" class="wa-iconbtn" id="emoji-compose-btn" title="Emoji"><i class="bi bi-emoji-smile"></i></button>
+                        <button type="button" class="wa-iconbtn" id="file-btn" title="Attach file" disabled><i class="bi bi-paperclip"></i></button>
+                        <input type="text" id="message-input" placeholder="Type a message" disabled>
+                        <button type="submit" class="wa-send" id="send-btn" title="Send" disabled><i class="bi bi-send-fill"></i></button>
+                    </form>
+                    <div class="wa-emoji-pop" id="composer-emoji-pop" hidden></div>
+                </footer>
+            </section>
+
+            <!-- Members drawer -->
+            <aside class="wa-drawer" id="members-drawer" hidden>
+                <header><span><i class="bi bi-people-fill me-2"></i>Members</span><button class="wa-iconbtn" id="members-close"><i class="bi bi-x-lg"></i></button></header>
+                <div class="wa-drawer-body"><div id="room-members-list"></div></div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Hidden stubs kept so existing app.js references resolve safely -->
+    <div style="display:none" aria-hidden="true">
+        <div id="connection-panel"></div>
+        <div id="status-panel">
+            <span id="status-username"></span><span id="status-server"></span>
+            <span id="status-connection" class="badge bg-success">Connected</span>
+            <button id="disconnect-btn" type="button"></button>
+        </div>
+        <form id="connect-form">
+            <input type="text" id="username" value="{{ account or '' }}">
+            <input type="text" id="server" value="localhost">
+            <input type="number" id="port" value="8000">
+        </form>
+        <div id="connection-alert"><span id="connection-alert-message"></span></div>
+        <span id="chat-status"></span>
+        <!-- roomListModal stub so bootstrap.Modal.getInstance(...) never throws -->
+        <div class="modal fade" id="roomListModal" tabindex="-1" aria-hidden="true"></div>
+    </div>
+    
+    <!-- Profile / account modal -->
+    <div class="modal fade" id="profileModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-circle me-2"></i>Profile &amp; settings</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="pf-hero">
+                        <div class="wa-avatar pf-avatar" id="pf-avatar">U</div>
+                        <div>
+                            <div class="pf-name" id="pf-username">username</div>
+                            <div class="pf-sub" id="pf-since">member since…</div>
+                        </div>
+                    </div>
+
+                    <div class="pf-sec">Profile</div>
+                    <label class="pf-label" for="pf-display">Display name</label>
+                    <input type="text" class="form-control" id="pf-display" maxlength="40" placeholder="Your display name">
+                    <label class="pf-label" for="pf-email">Email</label>
+                    <input type="text" class="form-control" id="pf-email" placeholder="—" disabled>
+                    <label class="pf-label">Avatar color</label>
+                    <div class="pf-swatches" id="pf-swatches"></div>
+                    <button type="button" class="btn btn-primary w-100 mt-3" id="pf-save">Save changes</button>
+                    <div class="pf-msg" id="pf-msg"></div>
+
+                    <div class="pf-sec">Change password</div>
+                    <label class="pf-label" for="pf-cur">Current password</label>
+                    <input type="password" class="form-control" id="pf-cur" autocomplete="current-password" placeholder="Current password">
+                    <label class="pf-label" for="pf-new">New password</label>
+                    <input type="password" class="form-control" id="pf-new" autocomplete="new-password" placeholder="At least 6 characters">
+                    <button type="button" class="btn btn-outline-secondary w-100 mt-3" id="pf-pass">Update password</button>
+                    <div class="pf-msg" id="pf-pass-msg"></div>
+
+                    <div class="pf-sec">Preferences</div>
+                    <label class="pf-toggle"><input type="checkbox" id="pf-reduce-motion"> Reduce motion &amp; background animation</label>
+                    <a href="{{ url_for('logout') }}" class="btn btn-danger w-100 mt-3"><i class="bi bi-box-arrow-right me-1"></i>Log out</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message encryption-details modal -->
+    <div class="modal fade" id="msgInfoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-shield-lock me-2"></i>Encryption details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="msg-info-body"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Room Modal -->
+    <div class="modal fade" id="createRoomModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Room</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="create-room-form">
+                        <div class="mb-3">
+                            <label for="new-room-id" class="form-label">Room ID</label>
+                            <input type="text" class="form-control" id="new-room-id" placeholder="Unique identifier for the room">
+                        </div>
+                        <div class="mb-3">
+                            <label for="new-room-name" class="form-label">Room Name</label>
+                            <input type="text" class="form-control" id="new-room-name" placeholder="Display name for the room">
+                        </div>
+                        <div class="mb-3">
+                            <label for="new-room-description" class="form-label">Description (optional)</label>
+                            <textarea class="form-control" id="new-room-description" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="create-room-btn">Create Room</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <!-- Markdown and syntax highlighting libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/message_interactions.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/rich_text.js') }}"></script>
+
+    <!-- Security Report Modal -->
+    <div class="modal fade" id="securityReportModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-shield-lock me-2"></i>Security Analysis Report
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="demo-note"><i class="bi bi-info-circle"></i> Demonstration view. Results shown here are illustrative samples, not live measurements from the running server.</div>
+                    <div id="securityReport">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <p class="mt-3">Running security tests...</p>
+                            <div class="progress mt-3">
+                                <div id="securityTestProgress" class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="runSecurityTestsBtn">
+                        <i class="bi bi-play-fill"></i> Run Tests Again
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Stats Modal -->
+    <div class="modal fade" id="performanceStatsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-graph-up me-2"></i>Performance Comparison
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="demo-note"><i class="bi bi-info-circle"></i> Demonstration view. The numbers below are illustrative samples for comparison, not measured benchmarks.</div>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="messageCount" class="form-label">Message Count:</label>
+                                <input type="number" class="form-control" id="messageCount" value="1000" min="100" max="10000">
+                                <small class="text-muted">Number of messages to send (100-10000)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="messageSize" class="form-label">Message Size (bytes):</label>
+                                <input type="number" class="form-control" id="messageSize" value="1024" min="16" max="65536">
+                                <small class="text-muted">Size of each message (16-65536 bytes)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="protocolSelection" class="form-label">Protocols to Test:</label>
+                                <select class="form-select" id="protocolSelection" multiple size="4">
+                                    <option value="noise" selected>Noise Protocol</option>
+                                    <option value="tls13" selected>TLS 1.3</option>
+                                    <option value="plain_tls">TLS 1.2</option>
+                                    <option value="unencrypted">Unencrypted (baseline)</option>
+                                </select>
+                                <small class="form-text text-muted">Hold Ctrl/Cmd key to select multiple protocols</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            Performance Test Configuration
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Metrics:</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="metricHandshake" checked>
+                                            <label class="form-check-label" for="metricHandshake">Handshake Time</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="metricLatency" checked>
+                                            <label class="form-check-label" for="metricLatency">Message Latency</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="metricThroughput" checked>
+                                            <label class="form-check-label" for="metricThroughput">Throughput</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="metricResource" checked>
+                                            <label class="form-check-label" for="metricResource">Resource Usage</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Output Format:</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="outputFormat" id="outputFormatTable" value="table" checked>
+                                            <label class="form-check-label" for="outputFormatTable">Table</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="outputFormat" id="outputFormatChart" value="chart">
+                                            <label class="form-check-label" for="outputFormatChart">Chart</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="outputFormat" id="outputFormatJson" value="json">
+                                            <label class="form-check-label" for="outputFormatJson">JSON</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="button" class="btn btn-primary" id="runPerformanceTestBtn">
+                                    <i class="bi bi-play-fill me-1"></i>Run Performance Test
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="performanceResults">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle-fill me-2"></i>Configure and run a performance test to see results.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-success" id="downloadResultsBtn" disabled>
+                        <i class="bi bi-download me-1"></i>Download Results
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Transfer Modal -->
+    <div class="modal fade" id="fileTransferModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="bi bi-file-earmark-arrow-up me-2"></i>File Transfer Management
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-tabs" id="fileTransferTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="send-file-tab" data-bs-toggle="tab" data-bs-target="#send-file-tab-pane" type="button" role="tab" aria-controls="send-file-tab-pane" aria-selected="true">
+                                <i class="bi bi-upload me-1"></i>Send File
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="received-files-tab" data-bs-toggle="tab" data-bs-target="#received-files-tab-pane" type="button" role="tab" aria-controls="received-files-tab-pane" aria-selected="false">
+                                <i class="bi bi-download me-1"></i>Received Files
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="file-security-tab" data-bs-toggle="tab" data-bs-target="#file-security-tab-pane" type="button" role="tab" aria-controls="file-security-tab-pane" aria-selected="false">
+                                <i class="bi bi-shield-lock me-1"></i>Security Info
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content p-3 border border-top-0 rounded-bottom" id="fileTransferTabContent">
+                        <div class="tab-pane fade show active" id="send-file-tab-pane" role="tabpanel" aria-labelledby="send-file-tab" tabindex="0">
+                            <form id="enhanced-file-form" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label for="enhancedFileInput" class="form-label">Select File to Send</label>
+                                    <input class="form-control" type="file" id="enhancedFileInput" name="file">
+                                    <div class="form-text">Maximum size: 50MB</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="fileDestinationRoom" class="form-label">Destination Room</label>
+                                    <select class="form-select" id="fileDestinationRoom">
+                                        <!-- Options will be loaded dynamically -->
+                                        <option value="main">Main Room</option>
+                                    </select>
+                                </div>
+                                <div class="progress mb-3">
+                                    <div id="enhancedFileUploadProgress" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                        role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" 
+                                        style="width: 0%"></div>
+                                </div>
+                                <div id="enhancedUploadStatusMessage" class="alert alert-primary">
+                                    Select a file and click "Send File" to upload
+                                </div>
+                                <div class="d-grid">
+                                    <button type="button" class="btn btn-primary" id="enhanced-upload-file-btn">
+                                        <i class="bi bi-file-earmark-arrow-up me-1"></i>Send File
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="tab-pane fade" id="received-files-tab-pane" role="tabpanel" aria-labelledby="received-files-tab" tabindex="0">
+                            <div class="mb-3">
+                                <label for="fileRoomFilter" class="form-label">Filter by Room</label>
+                                <select class="form-select" id="fileRoomFilter">
+                                    <option value="all">All Rooms</option>
+                                    <option value="main">Main Room</option>
+                                    <!-- Other rooms will be added dynamically -->
+                                </select>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Filename</th>
+                                            <th>Sender</th>
+                                            <th>Size</th>
+                                            <th>Time</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="receivedFilesList">
+                                        <tr>
+                                            <td colspan="5" class="text-center">No files received yet</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="file-security-tab-pane" role="tabpanel" aria-labelledby="file-security-tab" tabindex="0">
+                            <div class="card">
+                                <div class="card-header">
+                                    <i class="bi bi-shield-lock me-1"></i>File Transfer Security
+                                </div>
+                                <div class="card-body">
+                                    <p>Files are secured with end-to-end encryption using the Noise Protocol Framework:</p>
+                                    <ul>
+                                        <li><strong>Encryption:</strong> ChaCha20-Poly1305</li>
+                                        <li><strong>Authentication:</strong> HMAC with SHA-256</li>
+                                        <li><strong>Key Exchange:</strong> X25519 (Curve25519)</li>
+                                        <li><strong>Forward Secrecy:</strong> Enabled</li>
+                                    </ul>
+                                    <p>Each file is encrypted before transmission and can only be decrypted by intended recipients.</p>
+
+                                    <div class="alert alert-info mt-3">
+                                        <i class="bi bi-info-circle-fill me-2"></i>
+                                        File metadata (name, size) is visible to room members, but file contents are encrypted.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp shell UI behaviours (menu, members drawer, search, composer emoji) -->
+    <script>
+    $(function () {
+        // Overflow menu
+        const $ob = $('#wa-overflow-btn'), $om = $('#wa-overflow-menu');
+        $ob.on('click', function (e) { e.stopPropagation(); $om.prop('hidden', !$om.prop('hidden')); });
+        $om.on('click', function (e) { e.stopPropagation(); });
+        $om.find('button, a').on('click', function () { $om.prop('hidden', true); });
+        $(document).on('click', function () { $om.prop('hidden', true); });
+
+        // Members drawer
+        function openMembers() { $('#members-drawer').prop('hidden', false); }
+        $('#members-btn, #open-members').on('click', openMembers);
+        $('#members-close').on('click', function () { $('#members-drawer').prop('hidden', true); });
+
+        // Room search (client-side filter; periodic re-render also honours it)
+        $('#room-search').on('input', function () {
+            const q = this.value.toLowerCase();
+            document.querySelectorAll('#room-list .wa-chat-row').forEach(function (row) {
+                const name = (row.querySelector('.wa-chat-row-name')?.textContent || '').toLowerCase();
+                const id = (row.getAttribute('data-room-id') || '').toLowerCase();
+                row.style.display = (!q || name.includes(q) || id.includes(q)) ? '' : 'none';
+            });
+        });
+
+        // Composer emoji popover (inserts into the message input)
+        const emojis = ['😀','😂','😍','😎','🥳','😅','🙂','😉','👍','🙏','🔥','🎉','❤️','💯','👏','✨','🚀','🤝','👌','🙌','😮','😢','🤔','😴','😇','🥺','💪','🌟'];
+        const $pop = $('#composer-emoji-pop');
+        $pop.html(emojis.map(e => '<button type="button">' + e + '</button>').join(''));
+        $('#emoji-compose-btn').on('click', function (e) {
+            e.stopPropagation();
+            $pop.prop('hidden', !$pop.prop('hidden'));
+        });
+        $pop.on('click', function (e) { e.stopPropagation(); });
+        $pop.on('click', 'button', function () {
+            const inp = document.getElementById('message-input');
+            if (inp && !inp.disabled) { inp.value += this.textContent; inp.focus(); }
+        });
+        $(document).on('click', function () { $pop.prop('hidden', true); });
+
+        // ---- Profile / account ----
+        const SWATCHES = ['#1fd98a', '#00b4d8', '#9b5de5', '#f15bb5', '#ff8c42', '#ffd166', '#06d6a0', '#ef476f'];
+        const toast = window.toast || function (m) { console.log(m); };
+        let profile = { username: '', display_name: '', avatar_color: '#1fd98a', email: '', created_at: '' };
+
+        function applyIdentity() {
+            const color = profile.avatar_color || '#1fd98a';
+            const initial = (profile.display_name || profile.username || 'U').trim().charAt(0).toUpperCase();
+            $('#me-avatar').css('background', 'linear-gradient(150deg,' + color + ',' + color + 'cc)').text(initial);
+            $('#me-name').text(profile.display_name || profile.username || 'You');
+        }
+
+        function renderSwatches() {
+            $('#pf-swatches').html(SWATCHES.map(function (c) {
+                const sel = (c.toLowerCase() === (profile.avatar_color || '').toLowerCase()) ? ' selected' : '';
+                return '<button type="button" class="pf-swatch' + sel + '" data-color="' + c + '" style="background:' + c + '"></button>';
+            }).join(''));
+        }
+
+        function loadProfile() {
+            $.get('/profile').done(function (r) {
+                if (r && r.success) {
+                    profile = r.profile;
+                    applyIdentity();
+                    $('#pf-avatar').css('background', 'linear-gradient(150deg,' + profile.avatar_color + ',' + profile.avatar_color + 'cc)')
+                        .text((profile.display_name || profile.username || 'U').charAt(0).toUpperCase());
+                    $('#pf-username').text(profile.username);
+                    $('#pf-display').val(profile.display_name);
+                    $('#pf-email').val(profile.email || '—');
+                    $('#pf-since').text(profile.created_at ? ('Member since ' + new Date(profile.created_at).toLocaleDateString()) : '');
+                    renderSwatches();
+                }
+            });
+        }
+
+        $('#open-profile').on('click', function () {
+            loadProfile();
+            new bootstrap.Modal(document.getElementById('profileModal')).show();
+        });
+
+        $('#pf-swatches').on('click', '.pf-swatch', function () {
+            profile.avatar_color = $(this).data('color');
+            $('.pf-swatch').removeClass('selected');
+            $(this).addClass('selected');
+            $('#pf-avatar').css('background', 'linear-gradient(150deg,' + profile.avatar_color + ',' + profile.avatar_color + 'cc)');
+        });
+
+        $('#pf-save').on('click', function () {
+            const display_name = $('#pf-display').val().trim();
+            $.ajax({
+                url: '/profile/update', type: 'POST', contentType: 'application/json',
+                data: JSON.stringify({ display_name: display_name, avatar_color: profile.avatar_color })
+            }).done(function (r) {
+                if (r && r.success) {
+                    profile.display_name = r.display_name; profile.avatar_color = r.avatar_color;
+                    applyIdentity(); toast('Profile updated', 'success');
+                } else { toast((r && r.message) || 'Could not update profile', 'danger'); }
+            }).fail(function () { toast('Could not update profile', 'danger'); });
+        });
+
+        $('#pf-pass').on('click', function () {
+            const cur = $('#pf-cur').val(), nw = $('#pf-new').val();
+            if (!cur || !nw) { toast('Enter both passwords', 'danger'); return; }
+            $.ajax({
+                url: '/profile/password', type: 'POST', contentType: 'application/json',
+                data: JSON.stringify({ current_password: cur, new_password: nw })
+            }).done(function (r) {
+                if (r && r.success) { $('#pf-cur').val(''); $('#pf-new').val(''); toast('Password changed', 'success'); }
+                else { toast((r && r.message) || 'Could not change password', 'danger'); }
+            }).fail(function () { toast('Could not change password', 'danger'); });
+        });
+
+        // Reduce-motion preference (persisted)
+        const rm = localStorage.getItem('noise_reduce_motion') === '1';
+        $('#pf-reduce-motion').prop('checked', rm);
+        document.body.classList.toggle('reduce-motion', rm);
+        $('#pf-reduce-motion').on('change', function () {
+            const on = this.checked;
+            localStorage.setItem('noise_reduce_motion', on ? '1' : '0');
+            document.body.classList.toggle('reduce-motion', on);
+        });
+
+        // Apply saved identity on load
+        loadProfile();
+    });
+    </script>
+</body>
+</html>

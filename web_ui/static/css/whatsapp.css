@@ -1,0 +1,337 @@
+/* =========================================================================
+   Noise Protocol - WhatsApp-desktop chat shell
+   Loaded after app-theme.css. Owns the two-pane layout, chat rows, message
+   bubbles, hover toolbar, members drawer, and bug fixes (washed-out bubbles,
+   floating emoji picker, white modal footer).
+   ========================================================================= */
+
+/* hide the original Bootstrap chat scaffolding entirely */
+.noise-app .container-fluid > .row { display: none !important; }
+
+.noise-app { overflow: hidden; }
+
+.wa {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  background:
+    radial-gradient(1100px circle at 8% -10%, rgba(0, 255, 127, 0.08), transparent 45%),
+    var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+}
+
+/* generic icon button */
+.wa-iconbtn {
+  display: inline-grid; place-items: center;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: transparent; border: none; color: var(--fg-dim); cursor: pointer;
+  transition: background .2s var(--ease), color .2s var(--ease);
+}
+.wa-iconbtn:hover { background: rgba(0, 255, 127, 0.10); color: var(--accent); }
+.wa-iconbtn i { font-size: 1.15rem; }
+
+.wa-avatar {
+  flex: none;
+  width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 700; font-size: 1.05rem;
+  color: var(--accent-ink);
+  background: linear-gradient(150deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 18px rgba(0, 255, 127, 0.25);
+  text-transform: uppercase;
+}
+.wa-avatar-room { background: linear-gradient(150deg, #0f3a28, #0a261a); color: var(--accent); border: 1px solid var(--border-strong); box-shadow: none; }
+
+/* ---------------------------------------------------------- LEFT PANE */
+.wa-side {
+  width: 30%; min-width: 300px; max-width: 420px;
+  display: flex; flex-direction: column;
+  background: linear-gradient(180deg, #04130c, #020a06);
+  border-right: 1px solid var(--border);
+}
+.wa-side-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+}
+.wa-me { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.wa-me-name { font-family: var(--font-display); font-weight: 600; font-size: 1.02rem; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wa-side-actions { display: flex; align-items: center; gap: 2px; position: relative; }
+
+/* overflow menu */
+.wa-menu { position: relative; }
+.wa-menu-list {
+  position: absolute; right: 0; top: 46px; z-index: 40;
+  min-width: 210px; padding: 6px;
+  background: var(--bg-1); border: 1px solid var(--border-strong); border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.55);
+}
+.wa-menu-list[hidden] { display: none; }
+.wa-menu-list button, .wa-menu-list a {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 11px 13px; border: none; background: transparent; cursor: pointer;
+  color: var(--fg-dim); font-size: 0.94rem; border-radius: 10px; text-align: left; text-decoration: none;
+}
+.wa-menu-list button:hover, .wa-menu-list a:hover { background: rgba(0,255,127,0.08); color: var(--accent); }
+.wa-menu-list i { width: 18px; color: var(--accent); }
+.wa-menu-list .danger:hover { background: rgba(255,107,107,.12); color: #ff9b9b; }
+.wa-menu-list .danger i { color: #ff9b9b; }
+
+/* connection status line */
+.wa-conn { display: flex; align-items: center; gap: 9px; padding: 8px 18px; font-size: 0.78rem; color: var(--muted); font-family: var(--font-mono); }
+.wa-conn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.wa-conn-dot.on { background: var(--accent); box-shadow: 0 0 8px var(--glow-color-1); animation: waPulse 2s ease-in-out infinite; }
+.wa-conn-dot.off { background: #caa14a; }
+@keyframes waPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* search */
+.wa-search { padding: 8px 12px; }
+.wa-search-box { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 12px; }
+.wa-search-box i { color: var(--muted); }
+.wa-search-box input { flex: 1; background: transparent; border: none; outline: none; color: var(--fg); font-size: 0.92rem; }
+.wa-search-box input::placeholder { color: var(--muted); }
+
+/* chat list */
+.wa-chat-list { flex: 1; overflow-y: auto; padding: 4px 8px 16px; }
+.wa-chat-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 14px; cursor: pointer;
+  transition: background .18s var(--ease);
+  position: relative;
+}
+.wa-chat-row:hover { background: rgba(255,255,255,0.04); }
+.wa-chat-row.active { background: rgba(0, 255, 127, 0.10); }
+.wa-chat-row.active::before { content: ""; position: absolute; left: 0; top: 14%; bottom: 14%; width: 3px; border-radius: 3px; background: var(--accent); }
+.wa-chat-row-main { flex: 1; min-width: 0; }
+.wa-chat-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.wa-chat-row-name { font-weight: 600; font-size: 0.98rem; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wa-chat-row-meta { flex: none; font-size: 0.72rem; color: var(--muted); font-family: var(--font-mono); }
+.wa-chat-row-sub { font-size: 0.82rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.wa-leave { flex: none; background: transparent; border: none; color: var(--muted); width: 30px; height: 30px; border-radius: 50%; cursor: pointer; opacity: 0; transition: opacity .15s var(--ease), background .15s var(--ease), color .15s var(--ease); }
+.wa-chat-row:hover .wa-leave { opacity: 1; }
+.wa-leave:hover { background: rgba(255,107,107,.14); color: #ff9b9b; }
+.wa-list-empty, .wa-list-loading { text-align: center; color: var(--muted); padding: 28px 12px; font-size: 0.9rem; }
+
+/* ---------------------------------------------------------- RIGHT PANE */
+.wa-main { flex: 1; position: relative; display: flex; min-width: 0; }
+.wa-chat { flex: 1; display: flex; flex-direction: column; min-width: 0;
+  background:
+    radial-gradient(1200px circle at 100% 0%, rgba(0,255,127,0.05), transparent 45%),
+    #03100a;
+}
+.wa-chat-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 18px; border-bottom: 1px solid var(--border);
+  background: rgba(0, 255, 127, 0.04);
+}
+.wa-chat-id { display: flex; align-items: center; gap: 12px; cursor: pointer; min-width: 0; }
+.wa-chat-name { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; color: var(--fg); }
+.wa-chat-sub { font-size: 0.78rem; color: var(--accent); font-family: var(--font-mono); margin-top: 1px; }
+.wa-chat-actions { display: flex; align-items: center; gap: 2px; }
+
+/* messages area */
+.wa-messages {
+  flex: 1; overflow-y: auto; padding: 26px 8% 18px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.wa-day-sep, .noise-app .wa-messages .system-message {
+  align-self: center; margin: 10px auto; padding: 6px 16px;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+  border-radius: 999px; color: var(--fg-dim); font-size: 0.8rem; font-style: normal;
+}
+
+/* message bubbles (WhatsApp) - override old style.css/app-theme bubble styles */
+.noise-app .wa-messages .message { display: flex; margin: 2px 0; max-width: 100%; }
+.noise-app .wa-messages .message.incoming { justify-content: flex-start; }
+.noise-app .wa-messages .message.outgoing { justify-content: flex-end; }
+.noise-app .wa-messages .message-bubble {
+  position: relative;
+  max-width: min(70%, 560px);
+  padding: 8px 12px 6px;
+  border-radius: 12px;
+  box-shadow: 0 1px 1px rgba(0,0,0,.3);
+  font-size: 0.95rem; line-height: 1.45;
+}
+.noise-app .wa-messages .message.incoming .message-bubble {
+  background: #0c2018 !important;
+  border: 1px solid var(--border) !important;
+  color: var(--fg) !important;
+  border-top-left-radius: 4px;
+}
+.noise-app .wa-messages .message.outgoing .message-bubble {
+  background: linear-gradient(160deg, #075f3a, #064c2f) !important;
+  border: 1px solid rgba(0,255,127,0.35) !important;
+  color: #eafff4 !important;
+  border-top-right-radius: 4px;
+}
+.noise-app .wa-messages .message-sender { color: var(--accent) !important; font-weight: 600; font-size: 0.8rem; margin-bottom: 2px; }
+.noise-app .wa-messages .message-content { color: inherit !important; word-wrap: break-word; overflow-wrap: anywhere; }
+.noise-app .wa-messages .message-time { font-size: 0.66rem; color: rgba(233,255,245,0.55) !important; text-align: right; margin-top: 2px; padding: 0 4px; }
+.noise-app .wa-messages .message.incoming .message-time { color: var(--muted) !important; }
+.noise-app .wa-messages .edited-badge { font-size: 0.66rem; color: rgba(233,255,245,0.5) !important; cursor: pointer; }
+
+/* parent (reply) indicator inside bubble */
+.noise-app .parent-message-indicator {
+  display: block; margin-bottom: 6px; padding: 6px 10px;
+  border-left: 3px solid var(--accent) !important;
+  background: rgba(0,0,0,0.25) !important; border-radius: 6px;
+  font-size: 0.82rem; color: var(--fg-dim) !important;
+}
+.noise-app .parent-message-indicator .parent-sender { color: var(--accent); font-weight: 600; }
+
+/* hover action toolbar (compact, floats at bubble corner) */
+.noise-app .wa-messages .message-actions {
+  position: absolute; top: -14px;
+  display: flex; gap: 2px; padding: 3px;
+  background: var(--bg-1); border: 1px solid var(--border-strong);
+  border-radius: 999px; box-shadow: 0 8px 22px rgba(0,0,0,.5);
+  opacity: 0; pointer-events: none; transform: translateY(4px);
+  transition: opacity .15s var(--ease), transform .15s var(--ease); z-index: 5;
+}
+.noise-app .wa-messages .message.incoming .message-actions { right: 8px; }
+.noise-app .wa-messages .message.outgoing .message-actions { left: 8px; }
+.noise-app .wa-messages .message-bubble:hover .message-actions { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.noise-app .wa-messages .message-actions .action-btn {
+  width: 30px; height: 30px; border-radius: 50%; border: none; background: transparent;
+  color: var(--fg-dim); cursor: pointer; display: grid; place-items: center;
+}
+.noise-app .wa-messages .message-actions .action-btn:hover { background: rgba(0,255,127,0.12); color: var(--accent); }
+
+/* reactions chips */
+.noise-app .wa-messages .message-reactions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.noise-app .wa-messages .reaction-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px; border-radius: 999px; cursor: pointer; font-size: 0.8rem;
+  background: rgba(0,0,0,0.3) !important; border: 1px solid var(--border) !important; color: var(--fg) !important;
+}
+.noise-app .wa-messages .reaction-badge.reacted, .noise-app .wa-messages .reaction-badge.user-reacted {
+  background: rgba(0,255,127,0.18) !important; border-color: var(--accent) !important; color: var(--accent) !important;
+}
+
+/* per-message technical details: tuck it into a tiny subtle link + dark panel */
+.noise-app .wa-messages .technical-details-btn {
+  background: transparent !important; border: none !important; color: rgba(233,255,245,0.5) !important;
+  font-size: 0.7rem !important; padding: 2px 0 0 !important; text-decoration: underline; opacity: .8;
+}
+.noise-app .wa-messages .technical-details-btn:hover { color: var(--accent) !important; }
+.noise-app .technical-details-panel .card,
+.noise-app .technical-details-panel .card-body,
+.noise-app .technical-details-panel .bg-light {
+  background: #06140d !important; color: var(--fg) !important; border-color: var(--border) !important;
+}
+.noise-app .technical-details-panel .text-primary { color: var(--accent) !important; }
+.noise-app .technical-details-panel .text-success { color: var(--accent-2) !important; }
+.noise-app .technical-details-panel .text-info { color: #7fd8ff !important; }
+.noise-app .technical-details-panel .encrypted-bytes,
+.noise-app .technical-details-panel .full-bytes,
+.noise-app .technical-details-panel .mono { color: var(--accent-2) !important; word-break: break-all; }
+
+/* file message card inside a bubble */
+.noise-app .wa-messages .file-message { background: rgba(0,0,0,0.28) !important; border: 1px solid var(--border) !important; border-radius: 10px; padding: 10px; }
+
+/* composer */
+.wa-composer { padding: 12px 14px; border-top: 1px solid var(--border); background: rgba(0, 255, 127, 0.03); }
+.wa-composer-form { display: flex; align-items: center; gap: 8px; }
+.wa-composer #message-input {
+  flex: 1; background: rgba(0,0,0,0.38) !important; border: 1px solid var(--border) !important;
+  border-radius: 22px !important; padding: 12px 18px !important; color: var(--fg) !important; font-size: 0.96rem;
+}
+.wa-composer #message-input:focus { border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(0,255,127,0.14) !important; }
+.wa-send {
+  flex: none; width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink); display: grid; place-items: center;
+  transition: transform .15s var(--ease), box-shadow .25s var(--ease), opacity .2s var(--ease);
+}
+.wa-send:hover { box-shadow: 0 8px 22px rgba(0,255,127,0.32); transform: translateY(-1px); }
+.wa-send:disabled { opacity: .4; cursor: not-allowed; }
+.wa-send i { font-size: 1.1rem; }
+
+/* composer emoji popover */
+.wa-emoji-pop {
+  position: absolute; bottom: 76px; left: 14px; z-index: 30;
+  width: 280px; padding: 10px; border-radius: 16px;
+  background: var(--bg-1); border: 1px solid var(--border-strong); box-shadow: 0 24px 60px rgba(0,0,0,.55);
+  display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+}
+.wa-emoji-pop[hidden] { display: none; }
+.wa-emoji-pop button { font-size: 1.3rem; background: transparent; border: none; border-radius: 10px; padding: 6px; cursor: pointer; }
+.wa-emoji-pop button:hover { background: rgba(0,255,127,0.12); }
+
+/* empty splash */
+.wa-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--muted); gap: 14px; }
+.wa-empty .wa-empty-icon { width: 96px; height: 96px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,255,127,0.06); border: 1px solid var(--border); color: var(--accent); font-size: 2.4rem; }
+
+/* members drawer */
+.wa-drawer {
+  width: 320px; flex: none; display: flex; flex-direction: column;
+  background: linear-gradient(180deg, #04130c, #020a06); border-left: 1px solid var(--border);
+}
+.wa-drawer[hidden] { display: none; }
+.wa-drawer > header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); font-family: var(--font-display); font-weight: 600; }
+.wa-drawer-body { flex: 1; overflow-y: auto; padding: 12px 10px; }
+.wa-member { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; }
+.wa-member:hover { background: rgba(255,255,255,0.04); }
+.wa-member .wa-avatar { width: 38px; height: 38px; font-size: 0.9rem; }
+.wa-member .you { font-size: 0.7rem; color: var(--accent); font-family: var(--font-mono); }
+
+/* ----------------------------------------------------- reaction (emoji) picker fix */
+/* message_interactions.js renders #emojiPickerModal (a centered Bootstrap modal).
+   Give it a solid dark surface + a real grid so emojis never float over the page. */
+.noise-app #emojiPickerModal .modal-content,
+.noise-app #editMessageModal .modal-content,
+.noise-app .emoji-picker-modal {
+  background: var(--bg-1) !important;
+  border: 1px solid var(--border-strong) !important;
+  border-radius: 18px !important;
+}
+.noise-app #emojiPickerModal .emoji-grid {
+  display: grid !important;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.noise-app #emojiPickerModal .emoji-btn {
+  font-size: 1.5rem; line-height: 1;
+  padding: 10px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid var(--border) !important;
+  cursor: pointer; transition: transform .12s var(--ease), background .15s var(--ease);
+}
+.noise-app #emojiPickerModal .emoji-btn:hover { background: rgba(0, 255, 127, 0.12) !important; transform: scale(1.12); }
+.noise-app #editMessageModal textarea { background: rgba(0,0,0,0.38) !important; border: 1px solid var(--border-strong) !important; color: var(--fg) !important; }
+
+/* kill light mono pills/boxes everywhere (old Bootstrap/style.css leftovers) */
+.noise-app .mono, .noise-app .encrypted-bytes, .noise-app .full-bytes {
+  background: rgba(0, 0, 0, 0.35) !important; color: var(--accent-2) !important;
+  padding: 1px 6px; border-radius: 6px; word-break: break-all;
+}
+
+/* message encryption-details modal */
+.noise-app #msgInfoModal .mi-sec { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 16px 0 8px; }
+.noise-app #msgInfoModal .mi-sec:first-child { margin-top: 0; }
+.noise-app #msgInfoModal .mi-row { display: flex; justify-content: space-between; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: .9rem; }
+.noise-app #msgInfoModal .mi-label { color: var(--fg-dim); flex: none; }
+.noise-app #msgInfoModal .mi-val { color: var(--fg); text-align: right; word-break: break-word; }
+.noise-app #msgInfoModal .mi-mono { font-family: var(--font-mono); color: var(--accent-2) !important; background: transparent !important; padding: 0 !important; }
+.noise-app #msgInfoModal .mi-bytes { font-family: var(--font-mono); font-size: .8rem; color: var(--accent-2); background: rgba(0,0,0,0.35); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; margin-top: 6px; word-break: break-all; }
+
+/* slightly tighter hover toolbar */
+.noise-app .wa-messages .message-actions { top: -16px; padding: 2px; }
+.noise-app .wa-messages .message-actions .action-btn { width: 28px; height: 28px; }
+
+/* ------------------------------------------------------------ Modal fixes */
+.noise-app .modal-header, .noise-app .modal-body, .noise-app .modal-footer { background: transparent !important; }
+.noise-app .bg-light { background: var(--bg-2) !important; color: var(--fg) !important; }
+
+/* ------------------------------------------------------------ Responsive */
+@media (max-width: 820px) {
+  .wa-side { width: 100%; max-width: none; }
+  .wa-main { display: none; }
+  .wa.show-chat .wa-side { display: none; }
+  .wa.show-chat .wa-main { display: flex; }
+  .wa-drawer { position: absolute; right: 0; top: 0; bottom: 0; z-index: 40; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wa-conn-dot.on { animation: none; }
+}
